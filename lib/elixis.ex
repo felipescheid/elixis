@@ -1,18 +1,8 @@
 defmodule Elixis do
-  @moduledoc """
-  Documentation for `Elixis`.
-  """
+  use Application
 
-  @doc """
-  Hello world.
-
-  ## Examples
-
-      iex> Elixis.hello()
-      :world
-
-  """
-  def hello do
-    :world
+  @impl true
+  def start(_type, _args) do
+    Elixis.Supervisor.start_link(name: Elixis.Supervisor)
   end
 end
