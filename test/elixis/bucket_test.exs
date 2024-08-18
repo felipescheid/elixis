@@ -2,7 +2,7 @@ defmodule Elixis.BucketTest do
   use ExUnit.Case, async: true
 
   setup do
-    {:ok, bucket} = Elixis.Bucket.start_link([])
+    bucket = start_supervised!(Elixis.Bucket)
     %{bucket: bucket}
   end
 
