@@ -4,9 +4,12 @@ defmodule Elixis.Registry do
   ## Client API
   @doc """
   Starts the registry
+
+  `:name` is always required
   """
   def start_link(opts) do
-    GenServer.start_link(__MODULE__, :ok, opts)
+    server = Keyword.fetch!(opts, :name)
+    GenServer.start_link(__MODULE__, server, opts)
   end
 
   @doc """
@@ -15,41 +18,45 @@ defmodule Elixis.Registry do
   Returns {:ok, pid} if bucket exists, :error otherwise
   """
   def lookup(server, name) do
-    GenServer.call(server, {:lookup, name})
+    # Lookup is done in ETS, no need to access the server
+    case :ets.lookup(server, name) do
+      # ^ is the pin operator - we use it to NOT reassign the name variable
+      [{^name, pid}] -> {:ok, pid}
+      [] -> :error
+    end
   end
 
   @doc """
   Ensures there is a bucket with the given `name` in `server`
   """
   def create(server, name) do
-    GenServer.cast(server, {:create, name})
+    GenServer.call(server, {:create, name})
   end
 
   ## Defining GenServer Callbacks
 
   @impl true
-  def init(:ok) do
-    names = %{}
+  def init(table) do
+    # by default, the ETS table has the :protected option enabled, which means that only the registry process
+    # will be able to write to it. all other processes will be able to read from the table
+    # the read_concurrency option optimizes for concurrent reads
+    names = :ets.new(table, [:named_table, read_concurrency: true])
     refs = %{}
     {:ok, {names, refs}}
   end
 
   @impl true
-  def handle_call({:lookup, name}, _from, state) do
-    {names, _} = state
-    {:reply, Map.fetch(names, name), state}
-  end
+  def handle_call({:create, name}, _from, {names, refs}) do
+    case lookup(names, name) do
+      {:ok, pid} ->
+        {:reply, pid, {names, refs}}
 
-  @impl true
-  def handle_cast({:create, name}, {names, refs}) do
-    if Map.has_key?(names, name) do
-      {:noreply, names}
-    else
-      {:ok, pid} = DynamicSupervisor.start_child(Elixis.BucketSupervisor, Elixis.Bucket)
-      ref = Process.monitor(pid)
-      refs = Map.put(refs, ref, name)
-      names = Map.put(names, name, pid)
-      {:noreply, {names, refs}}
+      :error ->
+        {:ok, pid} = DynamicSupervisor.start_child(Elixis.BucketSupervisor, Elixis.Bucket)
+        ref = Process.monitor(pid)
+        refs = Map.put(refs, ref, name)
+        :ets.insert(names, {name, pid})
+        {:reply, pid, {names, refs}}
     end
   end
 
@@ -57,7 +64,7 @@ defmodule Elixis.Registry do
   def handle_info({:DOWN, ref, :process, _pid, _reason}, {names, refs}) do
     # pop returns both the removed value and the updated map
     {name, refs} = Map.pop(refs, ref)
-    names = Map.delete(names, name)
+    :ets.delete(names, name)
     {:noreply, {names, refs}}
   end
 
