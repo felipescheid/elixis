@@ -21,4 +21,8 @@ defmodule Elixis.BucketTest do
     assert current_value == 6
     assert Elixis.Bucket.get(bucket, "eggs") == nil
   end
+
+  test "are buckets temporary" do
+    assert Supervisor.child_spec(Elixis.Bucket, []).restart == :temporary
+  end
 end

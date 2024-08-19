@@ -8,7 +8,8 @@ defmodule Elixis.Supervisor do
   @impl true
   def init(:ok) do
     children = [
-      {Elixis.Registry, name: Elixis.Registry}
+      {Elixis.Registry, name: Elixis.Registry},
+      {DynamicSupervisor, name: Elixis.BucketSupervisor, strategy: :one_for_one}
     ]
 
     Supervisor.init(children, strategy: :one_for_one)

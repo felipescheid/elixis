@@ -23,4 +23,13 @@ defmodule Elixis.RegistryTest do
     Agent.stop(bucket)
     assert Elixis.Registry.lookup(registry, "shopping") == :error
   end
+
+  test "removes bucket on crash", %{registry: registry} do
+    Elixis.Registry.create(registry, "shopping")
+    {:ok, bucket} = Elixis.Registry.lookup(registry, "shopping")
+
+    # if a process terminates with a reason other than :normal, all linked processes receive an EXIT signal
+    Agent.stop(bucket, :shutdown)
+    assert Elixis.Registry.lookup(registry, "shopping") == :error
+  end
 end

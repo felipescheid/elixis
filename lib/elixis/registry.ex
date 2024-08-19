@@ -45,10 +45,10 @@ defmodule Elixis.Registry do
     if Map.has_key?(names, name) do
       {:noreply, names}
     else
-      {:ok, bucket} = Elixis.Bucket.start_link([])
-      ref = Process.monitor(bucket)
+      {:ok, pid} = DynamicSupervisor.start_child(Elixis.BucketSupervisor, Elixis.Bucket)
+      ref = Process.monitor(pid)
       refs = Map.put(refs, ref, name)
-      names = Map.put(names, name, bucket)
+      names = Map.put(names, name, pid)
       {:noreply, {names, refs}}
     end
   end
