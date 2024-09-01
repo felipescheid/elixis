@@ -9,7 +9,8 @@ defmodule Elixis.Supervisor do
   def init(:ok) do
     children = [
       {DynamicSupervisor, name: Elixis.BucketSupervisor, strategy: :one_for_one},
-      {Elixis.Registry, name: Elixis.Registry}
+      {Elixis.Registry, name: Elixis.Registry},
+      {Task.Supervisor, name: Elixis.RouterTasks}
     ]
 
     # we want the bucket supervisor to shut down whenever we lose the registry, since otherwise we would end with
