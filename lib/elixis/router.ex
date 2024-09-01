@@ -31,7 +31,6 @@ defmodule Elixis.Router do
   The routing table
   """
   def table do
-    # Replace with your actual computer name if using this
-    [{?a..?m, :"foo@Felipes-MacBook-Air"}, {?n..?z, :"bar@Felipes-MacBook-Air"}]
+    Application.fetch_env!(:elixis, :routing_table)
   end
 end

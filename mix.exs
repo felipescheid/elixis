@@ -19,7 +19,8 @@ defmodule Elixis.MixProject do
   def application do
     [
       extra_applications: [:logger],
-      mod: {Elixis, []}
+      env: [routing_table: []],
+      mod: {Elixis, []},
     ]
   end
 
